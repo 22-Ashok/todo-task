@@ -4,9 +4,27 @@ import { AppError } from '../utils/AppError.js';
 
 // Handle duplicate field values (e.g., Email already exists)
 const handlePsqlUniqueViolation = (err) => {
-  // Postgres puts the specific duplicate value in the 'detail' property
-  const message = `This information is already in use. Please try another value or log in.`;
-  return new AppError(message, 400); // 400 Bad Request
+  // 1. Check if the error is from the Categories table
+  if (err.constraint === 'unique_category_per_user') {
+    // err.detail looks like: "Key (name, user_id)=(work, 1) is duplicated."
+    // We use a quick regex to extract just the word "work"
+    const match = err.detail.match(/Key \(name, user_id\)=\((.*?),/);
+    const categoryName = match ? match[1] : 'that name';
+
+    return new AppError(`You already have a category named "${categoryName}". Please choose a different name.`, 400);
+  }
+
+  // 2. Check if the error is from the Users table
+  // Note: 'users_email_key' is the default name Postgres gives to a unique email column. 
+  // If your database named it differently, just console.log(err.constraint) to see what it is!
+  if (err.constraint === 'users_email_key' || err.constraint === 'users_email_unique') {
+    return new AppError('An account with this email already exists. Please log in instead.', 400);
+  }
+
+  // 3. The Fallback
+  // If you add new unique tables in the future and forget to add them above, 
+  // this acts as your safe, generic backup.
+  return new AppError('This exact information is already in use. Please try another value.', 400);
 };
 
 // Handle invalid data types sent to Postgres

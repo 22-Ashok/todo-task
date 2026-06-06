@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
-import { query } from '../config/db.js'; // <-- Notice the curly braces here!
-import { signToken } from '../utils/signinToken.js';
+import { query } from '../../config/db.js'; // <-- Notice the curly braces here!
+import { signToken } from '../../utils/signinToken.js';
 
 
 export const signup = async (req, res, next) => {

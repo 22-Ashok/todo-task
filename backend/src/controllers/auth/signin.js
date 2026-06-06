@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
-import { query } from '../config/db.js';
-import { signToken } from '../utils/signinToken.js';
-import { AppError } from '../utils/AppError.js';
+import { query } from '../../config/db.js';
+import { signToken } from '../../utils/signinToken.js';
+import { AppError } from '../../utils/AppError.js';
 
 export const signin = async (req, res, next) => {
   try {
