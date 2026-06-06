@@ -1,12 +1,18 @@
 import express from 'express';
+import userRouter from './src/routes/user.route.js';
+import { globalErrorHandler } from './src/middleware/errorHandler.js';
 
 const app = express();
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.send("Hello World");
-});
+
+app.use("/api/v1/auth", userRouter);
+
+
+// global error handler 
+app.use(globalErrorHandler);
+
 
 
 app.listen(8000, () => {
