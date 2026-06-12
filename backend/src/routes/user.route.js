@@ -5,7 +5,7 @@ import { signup } from '../controllers/auth/signup.js';
 import { signin } from '../controllers/auth/signin.js';
 
 const router = express.Router();
-router.post("/sign-up", validateRequest(createUserSchema), signup);
-router.post("/sign-in", validateRequest(signInSchema), signin)
+router.post("/register", validateRequest(createUserSchema), signup);
+router.post("/login", validateRequest(signInSchema), signin)
 
 export default router;
