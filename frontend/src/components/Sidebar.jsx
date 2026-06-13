@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { 
   CheckSquare, 
   Grid, 
@@ -9,18 +10,27 @@ import {
   User,
   ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useTodos } from '../context/TodoContext';
 
-export default function Sidebar({ 
-  currentView, 
-  setView, 
-  onOpenAddTodo, 
-  user, 
-  onLogout 
-}) {
+export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const { setIsAddTodoOpen } = useTodos();
+  const navigate = useNavigate();
+
+  const handleCreateTaskClick = () => {
+    setIsAddTodoOpen(true);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <aside className="hidden md:flex bg-[#0F0F0F] h-screen w-64 fixed left-0 top-0 border-r border-[#2A2A2A] flex-col py-6 px-4 z-40">
       {/* Brand Header */}
-      <div className="mb-8 px-2 flex items-center gap-3">
+      <Link to="/tasks" className="mb-8 px-2 flex items-center gap-3 hover:opacity-90">
         <div className="w-8 h-8 rounded bg-[#1D9E75] flex items-center justify-center">
           <CheckSquare className="text-white w-5 h-5" />
         </div>
@@ -28,13 +38,13 @@ export default function Sidebar({
           <h1 className="font-headline-md text-lg font-black text-[#68dbae] tracking-tight leading-tight">Taskly</h1>
           <p className="text-[10px] uppercase tracking-widest text-[#bccac1] font-bold">Productivity Workspace</p>
         </div>
-      </div>
+      </Link>
 
       {/* Primary CTA */}
       {user && (
         <button 
-          onClick={onOpenAddTodo}
-          className="mb-6 bg-[#1D9E75] text-white hover:bg-[#15825F] w-full py-2.5 rounded-full font-label-md text-sm font-semibold flex justify-center items-center gap-2 hover:opacity-95 transition-all shadow-[0_4px_12px_rgba(29,158,117,0.2)]"
+          onClick={handleCreateTaskClick}
+          className="mb-6 bg-[#1D9E75] text-white hover:bg-[#15825F] w-full py-2.5 rounded-full font-label-md text-sm font-semibold flex justify-center items-center gap-2 hover:opacity-95 transition-all shadow-[0_4px_12px_rgba(29,158,117,0.2)] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create Task
@@ -45,53 +55,59 @@ export default function Sidebar({
       <nav className="flex-1 flex flex-col gap-1">
         {user ? (
           <>
-            <button
-              onClick={() => setView('all-tasks')}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm text-left ${
-                currentView === 'all-tasks'
+            <NavLink
+              to="/tasks"
+              className={({ isActive }) => `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm text-left ${
+                isActive
                   ? 'bg-[#2a2a2a] text-[#68dbae] border-l-2 border-[#1D9E75] translate-x-1'
                   : 'text-[#bccac1] hover:bg-[#1A1A1A] hover:text-[#e5e2e1]'
               }`}
             >
               <CheckSquare className="w-5 h-5" />
               All Tasks
-            </button>
+            </NavLink>
 
-            <button
-              onClick={() => setView('categories')}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm text-left ${
-                currentView === 'categories' || currentView === 'category-detail'
+            <NavLink
+              to="/categories"
+              className={({ isActive }) => `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm text-left ${
+                isActive
                   ? 'bg-[#2a2a2a] text-[#68dbae] border-l-2 border-[#1D9E75] translate-x-1'
                   : 'text-[#bccac1] hover:bg-[#1A1A1A] hover:text-[#e5e2e1]'
               }`}
             >
               <Grid className="w-5 h-5" />
               Categories
-            </button>
+            </NavLink>
           </>
         ) : (
-          <button
-            onClick={() => setView('login')}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#2a2a2a] text-[#68dbae] font-medium text-sm text-left border-l-2 border-[#1D9E75]"
+          <NavLink
+            to="/login"
+            className={({ isActive }) => `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm text-left ${
+              isActive
+                ? 'bg-[#2a2a2a] text-[#68dbae] border-l-2 border-[#1D9E75]'
+                : 'text-[#bccac1] hover:bg-[#1A1A1A]'
+            }`}
           >
             <User className="w-5 h-5" />
             Join Taskly
-          </button>
+          </NavLink>
         )}
       </nav>
 
       {/* Footer Navigation */}
       <div className="mt-auto flex flex-col gap-1 pt-4 border-t border-[#2A2A2A]">
         <button
+          type="button"
           onClick={() => alert('Settings is a placeholder module')}
-          className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left"
+          className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left cursor-pointer"
         >
           <Settings className="w-5 h-5" />
           Settings
         </button>
         <button
+          type="button"
           onClick={() => alert('Support Hub coming soon!')}
-          className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left"
+          className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left cursor-pointer"
         >
           <HelpCircle className="w-5 h-5" />
           Help
@@ -116,9 +132,10 @@ export default function Sidebar({
                 </div>
               </div>
               <button 
-                onClick={onLogout}
+                onClick={handleLogout}
                 title="Log out"
-                className="p-1 hover:bg-[#2A2A2A] rounded text-[#bccac1] hover:text-red-400 transition-colors"
+                type="button"
+                className="p-1 hover:bg-[#2A2A2A] rounded text-[#bccac1] hover:text-red-400 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
