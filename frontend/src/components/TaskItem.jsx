@@ -6,14 +6,16 @@ import {
   Check, 
   AlertTriangle,
   MoreVertical,
-  Clock
+  Clock,
+  Pencil
 } from 'lucide-react';
 
 export default function TaskItem({ 
   todo, 
   category, 
   onToggleComplete, 
-  onDelete 
+  onDelete,
+  onEdit
 }) {
   const [showOptions, setShowOptions] = useState(false);
 
@@ -124,6 +126,15 @@ export default function TaskItem({
 
       {/* Action Buttons */}
       <div className="relative shrink-0 flex items-center self-center gap-1">
+        {/* Rapid edit on hover/desktop button */}
+        <button 
+          onClick={() => onEdit(todo)}
+          className="p-1.5 text-[#bccac1] hover:text-[#68dbae] hover:bg-[#2A2A2A] rounded-lg transition-all sm:opacity-0 group-hover:opacity-100"
+          title="Edit task"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+
         {/* Rapid delete on hover/desktop button */}
         <button 
           onClick={() => onDelete(todo.id)}
@@ -143,6 +154,16 @@ export default function TaskItem({
           </button>
           {showOptions && (
             <div className="absolute right-0 bottom-8 z-50 bg-[#1E1E1E] border border-[#2A2A2A] rounded-lg shadow-xl py-1 w-28">
+              <button 
+                onClick={() => {
+                  onEdit(todo);
+                  setShowOptions(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-xs text-[#68dbae] hover:bg-[#2A2A2A] flex items-center gap-2"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </button>
               <button 
                 onClick={() => {
                   onDelete(todo.id);

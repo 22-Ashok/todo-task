@@ -2,31 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTodos } from '../context/TodoContext';
 
-export default function AddTodoModal() {
-  const { 
-    categories, 
-    addTodo, 
-    isAddTodoOpen, 
-    setIsAddTodoOpen,
-    presetCategoryForNewTodo
+export default function EditTodoModal() {
+  const {
+    categories,
+    updateTodo,
+    editTodoData,
+    isEditTodoOpen,
+    setIsEditTodoOpen,
+    setEditTodoData
   } = useTodos();
 
   const [taskText, setTaskText] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
-  const [taskCategory, setTaskCategory] = useState('c1');
+  const [taskCategory, setTaskCategory] = useState('');
   const [taskPriority, setTaskPriority] = useState('medium');
-  const [taskDueDate, setTaskDueDate] = useState('Due Today');
+  const [taskDueDate, setTaskDueDate] = useState('No due date');
 
-  // Synchronize with category preset if modal is opened in a scoped category view
+  // Pre-fill form when editTodoData changes and modal opens
   useEffect(() => {
-    if (isAddTodoOpen) {
-      if (categories.length > 0) {
-        setTaskCategory(presetCategoryForNewTodo || categories[0].id);
-      }
+    if (isEditTodoOpen && editTodoData) {
+      setTaskText(editTodoData.title || '');
+      setTaskDesc(editTodoData.description || '');
+      setTaskCategory(editTodoData.category || categories[0]?.id || '');
+      setTaskPriority(editTodoData.priority || 'medium');
+      setTaskDueDate(editTodoData.dueDate || 'No due date');
     }
-  }, [isAddTodoOpen, presetCategoryForNewTodo, categories]);
+  }, [isEditTodoOpen, editTodoData, categories]);
 
-  if (!isAddTodoOpen) return null;
+  if (!isEditTodoOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,25 +37,44 @@ export default function AddTodoModal() {
       alert('Please fill out a task Title!');
       return;
     }
-    addTodo(taskText, taskDesc, taskPriority, taskCategory, taskDueDate);
-    
+
+    const categoryId = taskCategory
+      ? (!isNaN(parseInt(taskCategory)) ? parseInt(taskCategory) : taskCategory)
+      : null;
+
+    const dueDateValue =
+      taskDueDate && taskDueDate !== 'No due date' ? new Date(taskDueDate) : null;
+
+    updateTodo(editTodoData.id, {
+      title: taskText,
+      description: taskDesc,
+      priority: taskPriority,
+      category_id: categoryId,
+      due_date: dueDateValue,
+    });
+
     // Reset Form
     setTaskText('');
     setTaskDesc('');
     setTaskPriority('medium');
-    setTaskDueDate('Due Today');
+    setTaskDueDate('No due date');
+  };
+
+  const handleClose = () => {
+    setIsEditTodoOpen(false);
+    setEditTodoData(null);
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
       <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl w-full max-w-[460px] flex flex-col shadow-2xl overflow-hidden">
-        
+
         {/* Modal Header */}
         <div className="flex justify-between items-center p-5 border-b border-[#2A2A2A]">
-          <h2 className="text-base font-bold text-white">New Task</h2>
-          <button 
+          <h2 className="text-base font-bold text-white">Edit Task</h2>
+          <button
             type="button"
-            onClick={() => setIsAddTodoOpen(false)}
+            onClick={handleClose}
             className="text-[#bccac1] hover:text-white transition-colors"
             aria-label="Close modal"
           >
@@ -63,18 +85,18 @@ export default function AddTodoModal() {
         {/* Modal Body */}
         <form onSubmit={handleSubmit}>
           <div className="p-5 flex flex-col gap-4">
-            
+
             {/* Title */}
             <div>
-              <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="modal-title-inp">
+              <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="edit-modal-title-inp">
                 Title <span className="text-[#ef4444] font-bold">*</span>
               </label>
-              <input 
-                type="text" 
-                id="modal-title-inp"
+              <input
+                type="text"
+                id="edit-modal-title-inp"
                 required
                 autoFocus
-                value={taskText} 
+                value={taskText}
                 onChange={(e) => setTaskText(e.target.value)}
                 placeholder="What needs to be done?"
                 className="w-full bg-[#111] border border-[#2A2A2A] rounded-lg py-2.5 px-3 text-sm text-[#e5e2e1] focus:outline-none focus:border-[#1D9E75] placeholder-gray-600 transition-colors"
@@ -83,11 +105,11 @@ export default function AddTodoModal() {
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="modal-desc-inp">
+              <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="edit-modal-desc-inp">
                 Description
               </label>
-              <textarea 
-                id="modal-desc-inp"
+              <textarea
+                id="edit-modal-desc-inp"
                 value={taskDesc}
                 onChange={(e) => setTaskDesc(e.target.value)}
                 placeholder="Add more details..."
@@ -99,11 +121,11 @@ export default function AddTodoModal() {
             {/* Category select & Due Date row */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="modal-cat-inp">
+                <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="edit-modal-cat-inp">
                   Category
                 </label>
-                <select 
-                  id="modal-cat-inp"
+                <select
+                  id="edit-modal-cat-inp"
                   value={taskCategory}
                   onChange={(e) => setTaskCategory(e.target.value)}
                   className="w-full bg-[#111] border border-[#2A2A2A] rounded-lg py-2 px-2.5 text-sm text-[#e5e2e1] focus:outline-none focus:border-[#1D9E75]"
@@ -115,12 +137,12 @@ export default function AddTodoModal() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="modal-date-inp">
+                <label className="block text-xs font-semibold text-[#bccac1] mb-1.5" htmlFor="edit-modal-date-inp">
                   Due Date
                 </label>
-                <input 
-                  type="text" 
-                  id="modal-date-inp"
+                <input
+                  type="text"
+                  id="edit-modal-date-inp"
                   value={taskDueDate}
                   onChange={(e) => setTaskDueDate(e.target.value)}
                   placeholder="e.g. Due Today, Tomorrow"
@@ -135,25 +157,25 @@ export default function AddTodoModal() {
                 Priority
               </label>
               <div className="grid grid-cols-3 gap-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setTaskPriority('low')}
                   className={`py-2 px-3 rounded-lg border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                    taskPriority === 'low' 
-                      ? 'border-[#26a37a] bg-[#26a37a]/15 text-[#68dbae]' 
+                    taskPriority === 'low'
+                      ? 'border-[#26a37a] bg-[#26a37a]/15 text-[#68dbae]'
                       : 'border-[#2A2A2A] text-[#bccac1] hover:bg-[#2A2A2A]'
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#68dbae]"></span>
                   Low
                 </button>
-                
-                <button 
+
+                <button
                   type="button"
                   onClick={() => setTaskPriority('medium')}
                   className={`py-2 px-3 rounded-lg border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                    taskPriority === 'medium' 
-                      ? 'border-amber-400 bg-amber-500/10 text-amber-300' 
+                    taskPriority === 'medium'
+                      ? 'border-amber-400 bg-amber-500/10 text-amber-300'
                       : 'border-[#2A2A2A] text-[#bccac1] hover:bg-[#2A2A2A]'
                   }`}
                 >
@@ -161,12 +183,12 @@ export default function AddTodoModal() {
                   Medium
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={() => setTaskPriority('high')}
                   className={`py-2 px-3 rounded-lg border text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                    taskPriority === 'high' 
-                      ? 'border-[#ef4444] bg-[#93000a]/30 text-[#ffb4ab]' 
+                    taskPriority === 'high'
+                      ? 'border-[#ef4444] bg-[#93000a]/30 text-[#ffb4ab]'
                       : 'border-[#2A2A2A] text-[#bccac1] hover:bg-[#2A2A2A]'
                   }`}
                 >
@@ -180,18 +202,18 @@ export default function AddTodoModal() {
 
           {/* Modal Footer */}
           <div className="p-5 border-t border-[#2A2A2A] flex justify-end gap-3 bg-[#131313]">
-            <button 
+            <button
               type="button"
-              onClick={() => setIsAddTodoOpen(false)}
+              onClick={handleClose}
               className="px-5 py-2 rounded-full border border-[#2A2A2A] text-xs font-semibold text-[#e5e2e1] hover:bg-[#2A2A2A] transition-colors"
             >
               Cancel
             </button>
-            <button 
+            <button
               type="submit"
               className="px-6 py-2 rounded-full bg-[#1D9E75] hover:bg-[#15825F] text-white font-semibold text-xs transition-colors"
             >
-              Create
+              Save Changes
             </button>
           </div>
         </form>

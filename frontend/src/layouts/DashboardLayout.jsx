@@ -1,9 +1,11 @@
 import React from 'react';
 import { Outlet, Navigate, Link, NavLink, useNavigate } from 'react-router-dom';
-import { CheckSquare, Grid, Plus, Check } from 'lucide-react';
+import { CheckSquare, Grid, Plus, Check, Settings, HelpCircle } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import AddTodoModal from '../components/AddTodoModal';
 import AddCategoryModal from '../components/AddCategoryModal';
+import EditTodoModal from '../components/EditTodoModal';
+import EditCategoryModal from '../components/EditCategoryModal';
 import { useAuth } from '../context/AuthContext';
 import { useTodos } from '../context/TodoContext';
 
@@ -113,11 +115,31 @@ export default function DashboardLayout() {
           <Grid className="w-5 h-5 mb-0.5" />
           <span>Categories</span>
         </NavLink>
+
+        <button
+          type="button"
+          onClick={() => alert('Settings coming soon')}
+          className="flex flex-col items-center justify-center font-semibold text-xs px-4 py-1.5 transition-all text-[#bccac1]"
+        >
+          <Settings className="w-5 h-5 mb-0.5" />
+          <span>Settings</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => alert('Help coming soon')}
+          className="flex flex-col items-center justify-center font-semibold text-xs px-4 py-1.5 transition-all text-[#bccac1]"
+        >
+          <HelpCircle className="w-5 h-5 mb-0.5" />
+          <span>Help</span>
+        </button>
       </nav>
 
       {/* Global Creator Modals */}
       <AddTodoModal />
       <AddCategoryModal />
+      <EditTodoModal />
+      <EditCategoryModal />
 
     </div>
   );

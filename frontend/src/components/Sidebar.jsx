@@ -98,7 +98,7 @@ export default function Sidebar() {
       <div className="mt-auto flex flex-col gap-1 pt-4 border-t border-[#2A2A2A]">
         <button
           type="button"
-          onClick={() => alert('Settings is a placeholder module')}
+          onClick={() => alert('Coming soon')}
           className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left cursor-pointer"
         >
           <Settings className="w-5 h-5" />
@@ -106,7 +106,7 @@ export default function Sidebar() {
         </button>
         <button
           type="button"
-          onClick={() => alert('Support Hub coming soon!')}
+          onClick={() => alert('Coming soon')}
           className="flex items-center gap-3 text-[#bccac1] hover:text-[#e5e2e1] px-4 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-all font-medium text-sm text-left cursor-pointer"
         >
           <HelpCircle className="w-5 h-5" />

@@ -8,8 +8,7 @@ export const updateTodo = async (req, res, next) => {
 
     // 1. Check if the user actually sent any data to update
     const fieldsToUpdate = Object.keys(req.body);
-    
-    if (fieldsToUpdate.length === 0) {
+if (fieldsToUpdate.length === 0) {
       return next(new AppError('Please provide at least one field to update.', 400));
     }
 

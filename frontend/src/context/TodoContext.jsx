@@ -1,79 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const TodoContext = createContext(null);
-
-const DEFAULT_TODOS = [
-  {
-    id: 't1',
-    title: 'Finalize Q3 API Documentation',
-    description: 'Review all endpoints with the backend team and ensure Swagger docs are up to date before deployment.',
-    completed: false,
-    priority: 'high',
-    dueDate: 'Due Today',
-    category: 'c1',
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-  },
-  {
-    id: 't2',
-    title: 'Review Pull Request #402',
-    description: 'Refactoring the authentication middleware for better performance.',
-    completed: false,
-    priority: 'medium',
-    dueDate: 'Due Tomorrow',
-    category: 'c1',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 't3',
-    title: 'Update Design System Colors',
-    description: 'Sync Figma tokens with Tailwind config to ensure emerald accents are consistent.',
-    completed: true,
-    priority: 'low',
-    dueDate: 'Tomorrow',
-    category: 'c2',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
-  },
-  {
-    id: 't4',
-    title: 'Client Meeting Notes',
-    description: 'Synthesize user feedback on checkout patterns and compile presentation deck.',
-    completed: false,
-    priority: 'medium',
-    dueDate: 'No due date',
-    category: 'c4',
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString()
-  },
-  {
-    id: 't5',
-    title: 'Bug: Mobile Nav Overlap',
-    description: 'Fix the z-index overlap on small screens where the primary FAB hides the last task item.',
-    completed: false,
-    priority: 'high',
-    dueDate: 'Due Today',
-    category: 'c1',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 't6',
-    title: 'Weekly Team Sync',
-    description: 'Prepare the agile retrospectives slides and grab metrics for sprint velocity.',
-    completed: false,
-    priority: 'medium',
-    dueDate: 'Due Tomorrow',
-    category: 'c1',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 't7',
-    title: 'Design System Audit',
-    description: 'Review color tokens audit report for legacy component compliance.',
-    completed: false,
-    priority: 'medium',
-    dueDate: 'Oct 24',
-    category: 'c2',
-    createdAt: new Date().toISOString()
-  }
-];
 
 const DEFAULT_CATEGORIES = [
   { id: 'c1', name: 'Engineering', description: 'Software architecture & releases', icon: 'Code', color: 'primary', status: 'High Priority' },
@@ -83,116 +12,242 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export function TodoProvider({ children }) {
+  const { user } = useAuth();
   const [todos, setTodos] = useState([]);
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Global Dialog controllers accessible by any subcomponent/sidebar
   const [isAddTodoOpen, setIsAddTodoOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [presetCategoryForNewTodo, setPresetCategoryForNewTodo] = useState('c1');
 
-  // Load from local storage
+  // Edit Todo modal state
+  const [isEditTodoOpen, setIsEditTodoOpen] = useState(false);
+  const [editTodoData, setEditTodoData] = useState(null);
+
+  // Edit Category modal state
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [editCategoryData, setEditCategoryData] = useState(null);
+
+  // Load initial data from database when user session is active
   useEffect(() => {
-    const savedTodos = localStorage.getItem('taskly_todos');
-    if (savedTodos) {
-      try {
-        setTodos(JSON.parse(savedTodos));
-      } catch (e) {
-        setTodos(DEFAULT_TODOS);
+    async function loadWorkspaceData() {
+      if (!user) {
+        setTodos([]);
+        setCategories([]);
+        return;
       }
-    } else {
-      setTodos(DEFAULT_TODOS);
-      localStorage.setItem('taskly_todos', JSON.stringify(DEFAULT_TODOS));
+
+      setLoading(true);
+      setError(null);
+      try {
+        const [fetchedTodos, fetchedCategories] = await Promise.all([
+          api.getTodos(),
+          api.getCategories()
+        ]);
+
+        const rawTodos = fetchedTodos.data?.todos || fetchedTodos.todos || fetchedTodos || [];
+        const rawCategories = fetchedCategories.data?.categories || fetchedCategories.categories || fetchedCategories || [];
+
+        // Normalize ids (handling _id from Mongoose or id from standard relational DBs)
+        const normalizedCats = rawCategories.map(cat => ({
+          ...cat,
+          id: cat.id || cat._id
+        }));
+
+        const normalizedTodos = rawTodos.map(todo => ({
+          ...todo,
+          id: todo.id || todo._id,
+          completed: todo.is_completed,
+          // Support relational joins or straight identifiers
+          category: todo.category?.id || todo.category?._id || todo.category || todo.category_id,
+          createdAt: todo.createdAt || new Date().toISOString()
+        }));
+
+        setTodos(normalizedTodos);
+
+        // Onboarding checklist: If database categories are empty, seed default ones or set state
+        if (normalizedCats.length === 0) {
+          // Attempt to register default categories on the backend so they persist permanently
+          const seededCats = [];
+          for (const item of DEFAULT_CATEGORIES) {
+            try {
+              const res = await api.createCategory({
+                name: item.name,
+                color: item.color,
+                icon: item.icon,
+                description: item.description,
+                status: item.status
+              });
+              const rawData = res.data?.category || res.category || res;
+              seededCats.push({ ...rawData, id: rawData.id || rawData._id });
+            } catch (err) {
+            }
+          }
+          setCategories(seededCats.length > 0 ? seededCats : DEFAULT_CATEGORIES);
+        } else {
+          setCategories(normalizedCats);
+        }
+
+      } catch (err) {
+        setError("Database Connection Notice: Make sure your API backend at http://localhost:8000 is running!");
+      } finally {
+        setLoading(false);
+      }
     }
 
-    const savedCategories = localStorage.getItem('taskly_categories');
-    if (savedCategories) {
-      try {
-        setCategories(JSON.parse(savedCategories));
-      } catch (e) {
-        setCategories(DEFAULT_CATEGORIES);
-      }
-    } else {
-      localStorage.setItem('taskly_categories', JSON.stringify(DEFAULT_CATEGORIES));
-    }
-  }, []);
-
-  const updateTodos = (newTodos) => {
-    setTodos(newTodos);
-    localStorage.setItem('taskly_todos', JSON.stringify(newTodos));
-  };
-
-  const updateCategories = (newCats) => {
-    setCategories(newCats);
-    localStorage.setItem('taskly_categories', JSON.stringify(newCats));
-  };
+    loadWorkspaceData();
+  }, [user]);
 
   // Actions
-  const addTodo = (title, description, priority, categoryId, dueDate) => {
-    const newTodo = {
-      id: `task_${Date.now()}`,
-      title,
-      description,
-      completed: false,
-      priority,
-      dueDate: dueDate || 'No due date',
-      category: categoryId,
-      createdAt: new Date().toISOString()
-    };
-    updateTodos([...todos, newTodo]);
-    setIsAddTodoOpen(false);
+  const addTodo = async (title, description, priority, categoryId, dueDate) => {
+    try {
+      const payload = {
+        title,
+        description,
+        priority,
+        category_id: categoryId && !isNaN(parseInt(categoryId)) ? parseInt(categoryId) : null,
+        due_date: dueDate && dueDate !== 'No due date' ? new Date(dueDate) : null
+      };
+
+      const response = await api.createTodo(payload);
+      const data = response.data?.todo || response.todo || response;
+
+      const normalized = {
+        ...data,
+        id: data.id || data._id || `task_${Date.now()}`,
+        completed: data.is_completed,
+        category: data.category?.id || data.category?._id || data.category || data.category_id || categoryId,
+        createdAt: data.createdAt || new Date().toISOString()
+      };
+
+      setTodos(prev => [...prev, normalized]);
+      setIsAddTodoOpen(false);
+    } catch (err) {
+      alert(`Network/Validation Failure: ${err.message}`);
+    }
   };
 
-  const deleteTodo = (id) => {
+  const deleteTodo = async (id) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      updateTodos(todos.filter(t => t.id !== id));
+      // Optimistic delete
+      const previousTodos = [...todos];
+      setTodos(prev => prev.filter(t => t.id !== id && t._id !== id));
+
+      try {
+        await api.deleteTodo(id);
+      } catch (err) {
+        setTodos(previousTodos);
+        alert(`Failed to delete todo from database: ${err.message}`);
+      }
     }
   };
 
-  const toggleCompleteTodo = (id) => {
-    updateTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
+  const toggleCompleteTodo = async (id) => {
+    const todoIndex = todos.findIndex(t => t.id === id || t._id === id);
+    if (todoIndex === -1) return;
 
-  const addCategory = (name, color, icon) => {
-    const newCat = {
-      id: `cat_${Date.now()}`,
-      name,
-      description: 'Custom category workspace',
-      icon,
-      color,
-      status: 'Active'
-    };
-    updateCategories([...categories, newCat]);
-    setIsAddCategoryOpen(false);
-  };
+    const targetTodo = todos[todoIndex];
+    const originalCompletedValue = targetTodo.completed;
+    const nextCompletedValue = !targetTodo.completed;
 
-  const reloadDemos = () => {
-    updateTodos(DEFAULT_TODOS);
-    updateCategories(DEFAULT_CATEGORIES);
-  };
+    // Snappy optimistic screen render
+    setTodos(prev => prev.map((t, idx) => idx === todoIndex ? { ...t, completed: nextCompletedValue } : t));
 
-  const resetState = () => {
-    if (window.confirm('This will wipe your active database state. Proceed?')) {
-      updateTodos([]);
+    try {
+      await api.updateTodo(id, { is_completed: nextCompletedValue });
+    } catch (err) {
+      // Revert if database save failed
+      setTodos(prev => prev.map((t, idx) => idx === todoIndex ? { ...t, completed: originalCompletedValue } : t));
+      alert(`Database update rejected: ${err.message}`);
     }
   };
 
-  return (
+  const addCategory = async (name, color, icon) => {
+    try {
+      const payload = {
+        name,
+        color,
+        icon,
+        description: 'Custom category workspace',
+        status: 'Active'
+      };
+
+      const response = await api.createCategory(payload);
+      const data = response.data?.category || response.category || response;
+
+      const normalized = {
+        ...data,
+        id: data.id || data._id || `cat_${Date.now()}`
+      };
+
+      setCategories(prev => [...prev, normalized]);
+      setIsAddCategoryOpen(false);
+    } catch (err) {
+      alert(`Failed to register custom category on database: ${err.message}`);
+    }
+  };
+
+const updateTodo = async (id, updates) => {
+    try {
+      const res = await api.updateTodo(id, updates);
+      const data = res.data?.todo || res.todo || res;
+      const normalized = {
+        ...data,
+        id: data.id || data._id,
+        completed: data.is_completed,
+        category: data.category?.id || data.category?._id || data.category || data.category_id,
+        createdAt: data.createdAt || new Date().toISOString(),
+      };
+      setTodos(prev => prev.map(t => (String(t.id) === String(id) ? normalized : t)));
+      setIsEditTodoOpen(false);
+      setEditTodoData(null);
+    } catch (err) {
+      alert(`Failed to update task: ${err.message}`);
+    }
+  };
+
+  const updateCategory = async (id, updates) => {
+    try {
+      const res = await api.updateCategory(id, updates);
+      const data = res.data?.category || res.category || res;
+      const normalized = { ...data, id: data.id || data._id };
+      setCategories(prev => prev.map(c => (String(c.id) === String(id) ? normalized : c)));
+      setIsEditCategoryOpen(false);
+      setEditCategoryData(null);
+    } catch (err) {
+      alert(`Failed to update category: ${err.message}`);
+    }
+  };
+
+return (
     <TodoContext.Provider value={{
       todos,
       categories,
       addTodo,
       deleteTodo,
       toggleCompleteTodo,
+      updateTodo,
+      updateCategory,
       addCategory,
-      reloadDemos,
-      resetState,
       isAddTodoOpen,
       setIsAddTodoOpen,
       isAddCategoryOpen,
       setIsAddCategoryOpen,
       presetCategoryForNewTodo,
-      setPresetCategoryForNewTodo
+      setPresetCategoryForNewTodo,
+      isEditTodoOpen,
+      setIsEditTodoOpen,
+      editTodoData,
+      setEditTodoData,
+      isEditCategoryOpen,
+      setIsEditCategoryOpen,
+      editCategoryData,
+      setEditCategoryData,
+      loading,
+      error
     }}>
       {children}
     </TodoContext.Provider>

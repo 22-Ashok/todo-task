@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlusCircle, Inbox, Code, Palette, Megaphone, User } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Inbox, Code, Palette, Megaphone, User, Pencil } from 'lucide-react';
 import { useTodos } from '../context/TodoContext';
 import FilterTabs from '../components/FilterTabs';
 import TaskItem from '../components/TaskItem';
@@ -15,13 +15,17 @@ export default function CategoryDetailPage() {
     toggleCompleteTodo, 
     deleteTodo, 
     setIsAddTodoOpen,
-    setPresetCategoryForNewTodo
+    setPresetCategoryForNewTodo,
+    setIsEditTodoOpen,
+    setEditTodoData,
+    setIsEditCategoryOpen,
+    setEditCategoryData
   } = useTodos();
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
-  const currentCategory = categories.find((c) => c.id === categoryId);
+  const currentCategory = categories.find((c) => String(c.id) === String(categoryId));
 
   // Safeguard: Redirect if category isn't found
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function CategoryDetailPage() {
     }
   };
 
-  const catTasks = todos.filter((t) => t.category === categoryId);
+  const catTasks = todos.filter((t) => String(t.category) === String(categoryId));
   const completedCount = catTasks.filter((t) => t.completed).length;
   const highPriorityCount = catTasks.filter((t) => t.priority === 'high' && !t.completed).length;
   const percentCompleted = catTasks.length === 0 ? 0 : Math.round((completedCount / catTasks.length) * 100);
@@ -114,6 +118,17 @@ export default function CategoryDetailPage() {
           </div>
         </div>
 
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => { setEditCategoryData(currentCategory); setIsEditCategoryOpen(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#2A2A2A] hover:border-[#1D9E75]/40 text-xs font-semibold text-[#bccac1] hover:text-white transition-all cursor-pointer"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit Category
+          </button>
+        </div>
+
         <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
           <span className="bg-[#1D9E75]/10 text-[#68dbae] px-2.5 py-1 rounded text-xs font-bold border border-[#1D9E75]/20">
             {percentCompleted}% completed
@@ -150,12 +165,13 @@ export default function CategoryDetailPage() {
 
         {filteredTodos.length > 0 ? (
           filteredTodos.map((todo) => (
-            <TaskItem 
+            <TaskItem
               key={todo.id}
               todo={todo}
               category={currentCategory}
               onToggleComplete={toggleCompleteTodo}
               onDelete={deleteTodo}
+              onEdit={(todo) => { setEditTodoData(todo); setIsEditTodoOpen(true); }}
             />
           ))
         ) : (
