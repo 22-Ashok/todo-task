@@ -3,9 +3,13 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-
 const pool = new Pool({
-    database: process.env.DB_NAME
+
+  connectionString: process.env.DATABASE_URL,
+  
+  ssl: {
+    rejectUnauthorized: false 
+  }
 });
 
 export const query = (text, params) => pool.query(text, params);
